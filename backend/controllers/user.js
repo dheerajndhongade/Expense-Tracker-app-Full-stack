@@ -17,10 +17,27 @@ exports.createUser = (req, res) => {
     })
       .then(() => {
         console.log("User created");
-        res
-          .status(201)
-          .json({ message: "User created successfully", redirectTo: "/login" });
+        res.status(201).json({
+          message: "User created successfully",
+        });
       })
       .catch((err) => console.log(err));
   });
+};
+
+exports.loginUser = (req, res) => {
+  let email = req.body.email;
+  let password = req.body.password;
+  User.findOne({ where: { email: email, password: password } })
+    .then((user) => {
+      if (user) {
+        res.status(200).json({ message: "Login successful" });
+      } else {
+        res.status(401).json({ message: "Invalid credentials" });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ message: "Error during login" });
+    });
 };
