@@ -5,7 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login Page</title>
     <style>
-      /* Styles for the login page */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      .container {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        max-width: 90%;
+        text-align: center;
+      }
+      h1 {
+        margin-bottom: 20px;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+      }
+      label {
+        margin-top: 10px;
+      }
+      input {
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: calc(100% - 22px);
+      }
+      button {
+        margin-top: 20px;
+        padding: 10px 15px;
+        border: none;
+        background-color: #0077ff;
+        color: white;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #3b83ef;
+      }
+      .signup-link {
+        margin-top: 10px;
+        display: block;
+        color: #007bff;
+        text-decoration: none;
+      }
+      .signup-link:hover {
+        text-decoration: underline;
+      }
+      .error-message {
+        color: red;
+        margin-top: 10px;
+      }
     </style>
   </head>
   <body>
@@ -46,7 +107,7 @@
             const data = await response.json();
 
             if (response.ok) {
-              window.location.href = "http://localhost:5000/dashboard";
+              window.location.href = "/frontend/";
             } else {
               document.getElementById("error-message").textContent =
                 data.message;
@@ -62,7 +123,7 @@
         .getElementById("signupLink")
         .addEventListener("click", (event) => {
           event.preventDefault();
-          window.location.href = "http://localhost:5000/user/signup";
+          window.location.href = "/frontend/signup.html";
         });
     </script>
   </body>
