@@ -10,14 +10,14 @@ let userRoute = require("./routes/users");
 let app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, "../frontend")));
-app.get("/user/signup", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend", "signup.html"));
-});
+// app.use(express.static(path.join(__dirname, "../frontend")));
+// app.get("/user/signup", (req, res) => {
+//   res.sendFile(path.join(__dirname, "../frontend", "signup.html"));
+// });
 
-app.get("/user/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend", "login.html"));
-});
+// app.get("/user/login", (req, res) => {
+//   res.sendFile(path.join(__dirname, "../frontend", "login.html"));
+// });
 
 app.use("/user", userRoute);
 
