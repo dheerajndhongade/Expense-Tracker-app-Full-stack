@@ -6,6 +6,7 @@ let port = 5000;
 
 let sequelize = require("./util/database");
 let userRoute = require("./routes/users");
+let expenseRoute = require("./routes/expenses");
 
 let app = express();
 app.use(cors());
@@ -20,6 +21,7 @@ app.use(bodyParser.json());
 // });
 
 app.use("/user", userRoute);
+app.use(expenseRoute);
 
 sequelize
   .sync()
