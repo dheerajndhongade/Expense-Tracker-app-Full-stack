@@ -1,7 +1,9 @@
 const { message } = require("statuses");
 let User = require("../models/user");
 const bcrypt = require("bcrypt");
+let jwt = require("jsonwebtoken");
 
+let jwtSecretKey = "Gp#&%{w9gS(qvYJU2B8<;W";
 exports.createUser = (req, res) => {
   let name = req.body.name;
   let email = req.body.email;
@@ -38,6 +40,7 @@ exports.createUser = (req, res) => {
 exports.loginUser = (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
+
   User.findOne({ where: { email: email } })
     .then((user) => {
       if (!user) {
@@ -48,7 +51,8 @@ exports.loginUser = (req, res) => {
           return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        res.status(200).json({ message: "Login successful" });
+        let token = jwt.sign({ user: user.id }, jwtSecretKey);
+        res.status(200).json({ token, message: "Login successful" });
       });
     })
     .catch((err) => {
