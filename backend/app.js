@@ -8,6 +8,7 @@ let sequelize = require("./util/database");
 let userRoute = require("./routes/users");
 let expenseRoute = require("./routes/expenses");
 let purchaseRoute = require("./routes/purchase");
+let premiumRoute = require("./routes/premium");
 
 let User = require("./models/user");
 let Expense = require("./models/expense");
@@ -20,6 +21,7 @@ app.use(bodyParser.json());
 app.use("/user", userRoute);
 app.use(expenseRoute);
 app.use("/purchase", purchaseRoute);
+app.use("/premium", premiumRoute);
 
 User.hasMany(Expense, { foreignKey: "userId", onDelete: "CASCADE" });
 Expense.belongsTo(User, { foreignKey: "userId" });
