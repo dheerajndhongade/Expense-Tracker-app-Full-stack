@@ -103,9 +103,8 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(loginData),
             });
-
             const data = await response.json();
-
+            console.log(data);
             if (response.ok) {
               localStorage.setItem("token", data.token);
               window.location.href = "/frontend/expenses.html";

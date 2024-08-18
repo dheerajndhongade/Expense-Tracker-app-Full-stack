@@ -1,3 +1,6 @@
+const User = require("../models/user"); // Assuming you have a User model
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
 let Razorpay = require("razorpay");
 let Order = require("../models/orders");
 
@@ -41,29 +44,38 @@ exports.purchasePremium = (req, res) => {
 };
 
 exports.updateTransactionStatus = async (req, res) => {
-  const { orderId, paymentId, status } = req.body;
-  const user = req.user;
-
   try {
-    const order = await Order.findOne({ where: { orderId } });
+    const { payment_id, order_id } = req.body;
+
+    const orderPromise = Order.findOne({ where: { orderId: order_id } });
+
+    const userUpdatePromise = req.user.update({ isPremium: true });
+
+    const [order, userUpdate] = await Promise.all([
+      orderPromise,
+      userUpdatePromise,
+    ]);
 
     if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
-    order.paymentId = paymentId;
-    order.status = status;
+    await order.update({ paymentId: payment_id, status: "SUCCESSFUL" });
 
-    if (status === "SUCCESS") {
-      user.isPremium = true;
-    }
+    const token = jwt.sign(
+      { userId: req.user.id, isPremium: true },
+      process.env.JWT_SECRET
+    );
 
-    await Promise.all([order.save(), user.save()]);
-
-    res.status(200).json({ message: "Transaction status updated" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating transaction status", error });
+    return res.status(202).json({
+      success: true,
+      message: "Transaction Successful",
+      token: token,
+    });
+  } catch (err) {
+    console.error("Error in updatePremiumUser:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
