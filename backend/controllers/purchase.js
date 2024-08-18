@@ -1,60 +1,62 @@
 const User = require("../models/user");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-let Razorpay = require("razorpay");
-let Order = require("../models/orders");
+const Razorpay = require("razorpay");
+const Order = require("../models/orders");
 
-let razorpayKeyId = process.env.RAZORPAY_KEY_ID;
-let razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
 
-let rzp = new Razorpay({
+const rzp = new Razorpay({
   key_id: razorpayKeyId,
   key_secret: razorpayKeySecret,
 });
 
 exports.purchasePremium = (req, res) => {
-  let amount = 2500;
+  const amount = 2500;
 
-  rzp.orders.create({ amount, currency: "INR" }, (err, order) => {
+  rzp.orders.create({ amount, currency: "INR" }, async (err, order) => {
     if (err) {
+      console.error("Error creating Razorpay order:", err);
       return res
         .status(500)
         .json({ message: "Error creating Razorpay order", error: err });
     }
 
-    req.user
-      .createOrder({
+    console.log("Order created:", order);
+
+    try {
+      await req.user.createOrder({
         paymentId: null,
         orderId: order.id,
         status: "PENDING",
-      })
-      .then(() => {
-        res.status(201).json({
-          razorpayOrderId: order.id,
-          razorpayKey: process.env.RAZORPAY_KEY_ID,
-          amount: order.amount,
-        });
-      })
-      .catch((err) => {
-        res
-          .status(500)
-          .json({ message: "Error saving order in database", error: err });
       });
+      res.status(201).json({
+        razorpayOrderId: order.id,
+        razorpayKey: process.env.RAZORPAY_KEY_ID,
+        amount: order.amount,
+      });
+    } catch (err) {
+      console.error("Error saving order in database:", err);
+      res
+        .status(500)
+        .json({ message: "Error saving order in database", error: err });
+    }
   });
 };
 
 exports.updateTransactionStatus = async (req, res) => {
   try {
     const { payment_id, order_id } = req.body;
+    console.log("Request Body:", req.body);
 
-    const orderPromise = Order.findOne({ where: { orderId: order_id } });
+    if (!payment_id || !order_id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing parameters" });
+    }
 
-    const userUpdatePromise = req.user.update({ isPremium: true });
-
-    const [order, userUpdate] = await Promise.all([
-      orderPromise,
-      userUpdatePromise,
-    ]);
+    const order = await Order.findOne({ where: { orderId: order_id } });
 
     if (!order) {
       return res
@@ -63,6 +65,8 @@ exports.updateTransactionStatus = async (req, res) => {
     }
 
     await order.update({ paymentId: payment_id, status: "SUCCESSFUL" });
+
+    await req.user.update({ isPremium: true });
 
     const token = jwt.sign(
       { userId: req.user.id, isPremium: true },
