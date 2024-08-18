@@ -107,6 +107,7 @@
             const data = await response.json();
 
             if (response.ok) {
+              localStorage.setItem("token", data.token);
               window.location.href = "/frontend/expenses.html";
             } else {
               document.getElementById("error-message").textContent =
