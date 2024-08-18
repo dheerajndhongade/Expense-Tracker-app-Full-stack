@@ -111,7 +111,7 @@
       }
       .message.success {
         background-color: #d4edda;
-        color: #155724;
+        color: #505715;
       }
       .message.error {
         background-color: #f8d7da;
@@ -248,9 +248,9 @@
 
             const leaderboard = await response.json();
             leaderboardList.innerHTML = "";
-            leaderboard.forEach((expense) => {
+            leaderboard.forEach((user) => {
               const li = document.createElement("li");
-              li.textContent = `${expense.amount} - ${expense.description} - ${expense.category}`;
+              li.textContent = `${user.name} - Total Expense: ${user.totalExpense}`;
               leaderboardList.appendChild(li);
             });
             leaderboardList.style.display = "block";

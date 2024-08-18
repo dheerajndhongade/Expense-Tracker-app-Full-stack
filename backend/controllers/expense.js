@@ -24,6 +24,12 @@ exports.postExpense = (req, res) => {
       category,
     })
     .then(() => {
+      let sum = req.user.totalExpense + amount;
+      return req.user.update({
+        totalExpense: sum,
+      });
+    })
+    .then(() => {
       console.log("Expense added");
       res.status(200).json({ message: "Expense added successfully" });
     })

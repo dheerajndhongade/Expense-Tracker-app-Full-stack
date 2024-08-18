@@ -1,4 +1,4 @@
-const User = require("../models/user"); // Assuming you have a User model
+const User = require("../models/user");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 let Razorpay = require("razorpay");
@@ -75,7 +75,7 @@ exports.updateTransactionStatus = async (req, res) => {
       token: token,
     });
   } catch (err) {
-    console.error("Error in updatePremiumUser:", err);
+    console.error("Error in updateTransactionStatus:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
