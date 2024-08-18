@@ -2,8 +2,9 @@ const { message } = require("statuses");
 let User = require("../models/user");
 const bcrypt = require("bcrypt");
 let jwt = require("jsonwebtoken");
+require("dotenv").config();
 
-let jwtSecretKey = "Gp#&%{w9gS(qvYJU2B8<;W";
+let jwtSecretKey = process.env.JWT_SECRET;
 exports.createUser = (req, res) => {
   let name = req.body.name;
   let email = req.body.email;
@@ -51,7 +52,10 @@ exports.loginUser = (req, res) => {
           return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        let token = jwt.sign({ user: user.id }, jwtSecretKey);
+        let token = jwt.sign(
+          { userId: user.id, isPremium: user.isPremium },
+          jwtSecretKey
+        );
         res.status(200).json({ token, message: "Login successful" });
       });
     })

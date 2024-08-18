@@ -7,26 +7,25 @@ let port = 5000;
 let sequelize = require("./util/database");
 let userRoute = require("./routes/users");
 let expenseRoute = require("./routes/expenses");
+let purchaseRoute = require("./routes/purchase");
+
 let User = require("./models/user");
 let Expense = require("./models/expense");
+let Order = require("./models/orders");
 
 let app = express();
 app.use(cors());
 app.use(bodyParser.json());
-// app.use(express.static(path.join(__dirname, "../frontend")));
-// app.get("/user/signup", (req, res) => {
-//   res.sendFile(path.join(__dirname, "../frontend", "signup.html"));
-// });
-
-// app.get("/user/login", (req, res) => {
-//   res.sendFile(path.join(__dirname, "../frontend", "login.html"));
-// });
 
 app.use("/user", userRoute);
 app.use(expenseRoute);
+app.use("/purchase", purchaseRoute);
 
-User.hasMany(Expense);
-Expense.belongsTo(User);
+User.hasMany(Expense, { foreignKey: "userId", onDelete: "CASCADE" });
+Expense.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(Order, { foreignKey: "userId", onDelete: "CASCADE" });
+Order.belongsTo(User, { foreignKey: "userId" });
 
 sequelize
   .sync()

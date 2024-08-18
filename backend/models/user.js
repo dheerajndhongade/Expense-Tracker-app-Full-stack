@@ -21,6 +21,9 @@ let User = sequelize.define("users", {
     type: Sequelize.STRING,
     allowNull: false,
   },
+  isPremium: {
+    type: Sequelize.BOOLEAN,
+  },
 });
 
 module.exports = User;
