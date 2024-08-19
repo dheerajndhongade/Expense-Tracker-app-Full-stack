@@ -1,12 +1,16 @@
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+const { v4: uuidv4 } = require("uuid");
 const Sib = require("sib-api-v3-sdk");
-const User = require("../models/user");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
-let client = Sib.ApiClient.instance;
-let apiKey = client.authentications["api-key"];
+const User = require("../models/user");
+const ForgotPasswordRequest = require("../models/forgotpassword");
+
+const client = Sib.ApiClient.instance;
+const apiKey = client.authentications["api-key"];
 apiKey.apiKey = process.env.SENDINBLUE_API_KEY;
-const jwtSecretKey = process.env.JWT_SECRET;
+
+let jwtSecretKey = process.env.JWT_SECRET;
 
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -22,15 +26,21 @@ exports.forgotPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const resetToken = jwt.sign({ userId: user.id }, jwtSecretKey);
+    const resetRequestId = uuidv4();
 
-    let apiInstance = new Sib.TransactionalEmailsApi();
-    let sendSmtpEmail = new Sib.SendSmtpEmail();
+    await ForgotPasswordRequest.create({
+      id: resetRequestId,
+      userId: user.id,
+      isActive: true,
+    });
+
+    const apiInstance = new Sib.TransactionalEmailsApi();
+    const sendSmtpEmail = new Sib.SendSmtpEmail();
     sendSmtpEmail.subject = "Password Reset Request";
-    sendSmtpEmail.htmlContent = `<html><body><p>Click <a href="http://yourdomain.com/reset-password?token=${resetToken}">here</a> to reset your password.</p></body></html>`;
+    sendSmtpEmail.htmlContent = `<html><body><p>Click <a href="http://localhost:5000/password/resetpassword/${resetRequestId}">here</a> to reset your password.</p></body></html>`;
     sendSmtpEmail.sender = {
       name: "Dheeraj",
-      email: "dheerajndhongade@gmail.com",
+      email: "bla998050@gmail.com",
     };
     sendSmtpEmail.to = [{ email: email }];
 
@@ -40,7 +50,42 @@ exports.forgotPassword = async (req, res) => {
       .status(200)
       .json({ message: "Password reset link has been sent to your email." });
   } catch (error) {
-    console.error(error);
+    console.error(
+      "Error sending password reset email:",
+      error.response ? error.response.body : error.message
+    );
     res.status(500).json({ message: "Error sending password reset link" });
+  }
+};
+exports.resetPassword = async (req, res) => {
+  const { resetRequestId, newPassword } = req.body;
+
+  try {
+    let resetRequest = await ForgotPasswordRequest.findOne({
+      where: { id: resetRequestId, isActive: true },
+    });
+
+    if (!resetRequest) {
+      return res
+        .status(404)
+        .json({ message: "Invalid or expired reset request" });
+    }
+
+    let hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await User.update(
+      { password: hashedPassword },
+      { where: { id: resetRequest.userId } }
+    );
+
+    await ForgotPasswordRequest.update(
+      { isActive: false },
+      { where: { id: resetRequestId } }
+    );
+
+    res.status(200).json({ message: "Password has been reset successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error resetting password" });
   }
 };

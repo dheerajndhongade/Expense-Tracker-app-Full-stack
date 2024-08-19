@@ -14,9 +14,11 @@ let passwordRoute = require("./routes/password");
 let User = require("./models/user");
 let Expense = require("./models/expense");
 let Order = require("./models/orders");
+let ForgotPasswordRequests = require("./models/forgotpassword");
 
 let app = express();
 app.use(cors());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use("/user", userRoute);
@@ -31,6 +33,9 @@ Expense.belongsTo(User, { foreignKey: "userId" });
 
 User.hasMany(Order, { foreignKey: "userId", onDelete: "CASCADE" });
 Order.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(ForgotPasswordRequests, { foreignKey: "userId" });
+ForgotPasswordRequests.belongsTo(User, { foreignKey: "userId" });
 
 sequelize
   .sync()
