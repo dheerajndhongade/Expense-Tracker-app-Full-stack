@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Premium Expense Tracker</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 80%;
+        max-width: 600px;
+        position: relative;
+      }
+      h1 {
+        margin-top: 0;
+        color: #333;
+      }
+      .filter-buttons {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+      }
+      .filter-buttons button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .filter-buttons button:hover {
+        background-color: #0056b3;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        background-color: #fff;
+      }
+      .download-button {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 10px;
+        display: block;
+      }
+      .download-button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .message {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+      .message.success {
+        background-color: #d4edda;
+        color: #505715;
+      }
+      .message.error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Premium Expense Tracker</h1>
+      <div class="filter-buttons">
+        <button id="daily">Daily</button>
+        <button id="weekly">Weekly</button>
+        <button id="monthly">Monthly</button>
+        <button id="all">All</button>
+      </div>
+      <ul id="expenseList"></ul>
+      <button id="download" class="download-button" disabled>Download</button>
+      <div id="message" class="message"></div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async function () {
+        const apiUrl = "http://localhost:5000/expenses";
+        const expenseList = document.getElementById("expenseList");
+        const messageDiv = document.getElementById("message");
+        const downloadButton = document.getElementById("download");
+
+        const token = localStorage.getItem("token");
+
+        async function fetchExpenses(filter = "") {
+          try {
+            const response = await fetch(`${apiUrl}${filter}`, {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: token,
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to fetch expenses");
+            }
+
+            const { res, premium } = await response.json();
+            expenseList.innerHTML = "";
+            res.forEach((expense) => {
+              const li = document.createElement("li");
+              li.textContent = `${expense.date} - ${expense.amount} - ${expense.description} - ${expense.category}`;
+              expenseList.appendChild(li);
+            });
+
+            if (premium) {
+              downloadButton.disabled = false;
+            } else {
+              downloadButton.disabled = true;
+            }
+          } catch (error) {
+            console.error("Error fetching expenses:", error);
+            messageDiv.textContent = "Error fetching expenses";
+            messageDiv.className = "message error";
+          }
+        }
+
+        document
+          .getElementById("daily")
+          .addEventListener("click", () => fetchExpenses("?filter=daily"));
+        document
+          .getElementById("weekly")
+          .addEventListener("click", () => fetchExpenses("?filter=weekly"));
+        document
+          .getElementById("monthly")
+          .addEventListener("click", () => fetchExpenses("?filter=monthly"));
+        document
+          .getElementById("all")
+          .addEventListener("click", () => fetchExpenses());
+
+        downloadButton.addEventListener("click", async function () {
+          try {
+            const response = await fetch(`${apiUrl}/download`, {
+              headers: {
+                Authorization: token,
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to download expenses");
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "expenses.csv";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            messageDiv.textContent = "Expenses downloaded successfully";
+            messageDiv.className = "message success";
+          } catch (error) {
+            console.error("Error downloading expenses:", error);
+            messageDiv.textContent = "Error downloading expenses";
+            messageDiv.className = "message error";
+          }
+        });
+
+        fetchExpenses();
+      });
+    </script>
+  </body>
+</html>
