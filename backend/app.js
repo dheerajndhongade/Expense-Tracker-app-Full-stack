@@ -9,6 +9,7 @@ let userRoute = require("./routes/users");
 let expenseRoute = require("./routes/expenses");
 let purchaseRoute = require("./routes/purchase");
 let premiumRoute = require("./routes/premium");
+let passwordRoute = require("./routes/password");
 
 let User = require("./models/user");
 let Expense = require("./models/expense");
@@ -19,6 +20,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 app.use("/user", userRoute);
+app.use("/password", passwordRoute);
+
 app.use(expenseRoute);
 app.use("/purchase", purchaseRoute);
 app.use("/premium", premiumRoute);

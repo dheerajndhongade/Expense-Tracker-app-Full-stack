@@ -1,8 +1,9 @@
 const { message } = require("statuses");
-let User = require("../models/user");
+const User = require("../models/user");
 const bcrypt = require("bcrypt");
-let jwt = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const Sib = require("sib-api-v3-sdk");
 
 let jwtSecretKey = process.env.JWT_SECRET;
 exports.createUser = (req, res) => {

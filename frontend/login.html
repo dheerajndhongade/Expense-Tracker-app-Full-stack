@@ -67,6 +67,9 @@
         color: red;
         margin-top: 10px;
       }
+      .hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -81,8 +84,22 @@
 
         <button type="submit">Login</button>
       </form>
+      <a href="#" id="forgotPasswordLink" class="signup-link"
+        >Forgot Password?</a
+      >
       <a href="#" id="signupLink" class="signup-link">New user? Signup</a>
       <div class="error-message" id="error-message"></div>
+    </div>
+
+    <div class="container hidden" id="forgotPasswordContainer">
+      <h1>Forgot Password</h1>
+      <form id="forgotPasswordForm">
+        <label for="forgotEmail">Email</label>
+        <input type="email" id="forgotEmail" required />
+        <button type="submit">Submit</button>
+      </form>
+      <a href="#" id="backToLoginLink" class="signup-link">Back to Login</a>
+      <div class="error-message" id="forgot-error-message"></div>
     </div>
 
     <script>
@@ -124,6 +141,60 @@
         .addEventListener("click", (event) => {
           event.preventDefault();
           window.location.href = "/frontend/signup.html";
+        });
+
+      document
+        .getElementById("forgotPasswordLink")
+        .addEventListener("click", (event) => {
+          event.preventDefault();
+          document
+            .getElementById("forgotPasswordContainer")
+            .classList.remove("hidden");
+          document
+            .getElementById("loginForm")
+            .parentElement.classList.add("hidden");
+        });
+
+      document
+        .getElementById("backToLoginLink")
+        .addEventListener("click", (event) => {
+          event.preventDefault();
+          document
+            .getElementById("forgotPasswordContainer")
+            .classList.add("hidden");
+          document
+            .getElementById("loginForm")
+            .parentElement.classList.remove("hidden");
+        });
+
+      document
+        .getElementById("forgotPasswordForm")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const email = document.getElementById("forgotEmail").value;
+
+          try {
+            const response = await fetch(
+              `http://localhost:5000/password/forgotpassword`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+              }
+            );
+
+            if (response.ok) {
+              alert("Password reset link has been sent to your email.");
+            } else {
+              const data = await response.json();
+              document.getElementById("forgot-error-message").textContent =
+                data.message;
+            }
+          } catch (error) {
+            console.error("Error:", error);
+            document.getElementById("forgot-error-message").textContent =
+              "Error sending password reset link.";
+          }
         });
     </script>
   </body>
