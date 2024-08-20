@@ -15,6 +15,7 @@ let User = require("./models/user");
 let Expense = require("./models/expense");
 let Order = require("./models/orders");
 let ForgotPasswordRequests = require("./models/forgotpassword");
+let FilesUrl = require("./models/fileurl");
 
 let app = express();
 app.use(cors());
@@ -36,6 +37,9 @@ Order.belongsTo(User, { foreignKey: "userId" });
 
 User.hasMany(ForgotPasswordRequests, { foreignKey: "userId" });
 ForgotPasswordRequests.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(FilesUrl, { onDelete: "CASCADE" });
+FilesUrl.belongsTo(User);
 
 sequelize
   .sync()
