@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expense Report</title>
+    <style>
+      /* Basic styling */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 80%;
+        max-width: 600px;
+      }
+      h1 {
+        margin-top: 0;
+        color: #333;
+      }
+      .download-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .download-button:hover {
+        background-color: #0056b3;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        background-color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Expense Report</h1>
+      <button class="download-button" id="downloadReport">
+        Download Report
+      </button>
+      <ul id="expenseList"></ul>
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const token = localStorage.getItem("token");
+        const expenseList = document.getElementById("expenseList");
+        const downloadButton = document.getElementById("downloadReport");
+
+        async function fetchExpenses() {
+          try {
+            const response = await fetch("http://localhost:5000/expenses", {
+              headers: {
+                Authorization: token,
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to fetch expenses");
+            }
+
+            const { res } = await response.json();
+            expenseList.innerHTML = "";
+            res.forEach((expense) => {
+              const li = document.createElement("li");
+              li.textContent = `${expense.amount} - ${expense.description} - ${expense.category}`;
+              expenseList.appendChild(li);
+            });
+          } catch (error) {
+            console.error("Error fetching expenses:", error);
+          }
+        }
+
+        async function downloadReport() {
+          try {
+            const response = await fetch(
+              "http://localhost:5000/premium/downloadreport",
+              {
+                method: "GET",
+                headers: {
+                  Authorization: token,
+                },
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to get the report URL");
+            }
+
+            const data = await response.json();
+            const reportUrl = data.fileURL;
+
+            if (reportUrl) {
+              const a = document.createElement("a");
+              a.style.display = "none";
+              a.href = reportUrl;
+              a.download = "Expenses.txt";
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(reportUrl);
+            } else {
+              console.error("Report URL not found");
+            }
+          } catch (error) {
+            console.error("Error downloading report:", error);
+          }
+        }
+
+        downloadButton.addEventListener("click", downloadReport);
+        fetchExpenses();
+      });
+    </script>
+  </body>
+</html>
