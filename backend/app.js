@@ -2,6 +2,10 @@ let express = require("express");
 let cors = require("cors");
 let bodyParser = require("body-parser");
 let path = require("path");
+let helmet = require("helmet");
+let compression = require("compression");
+let morgan = require("morgan");
+let fs = require("fs");
 let port = 5000;
 
 let sequelize = require("./util/database");
@@ -18,13 +22,20 @@ let ForgotPasswordRequests = require("./models/forgotpassword");
 let FilesUrl = require("./models/fileurl");
 
 let app = express();
+
+let accessLogStream = fs.createWriteStream(path.join(__dirname, "access.log"), {
+  flags: "a",
+});
+
+app.use(helmet());
+app.use(compression());
+app.use(morgan("combined", { stream: accessLogStream }));
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use("/user", userRoute);
 app.use("/password", passwordRoute);
-
 app.use(expenseRoute);
 app.use("/purchase", purchaseRoute);
 app.use("/premium", premiumRoute);

@@ -3,9 +3,24 @@ const User = require("../models/user");
 const sequelize = require("../util/database");
 
 exports.getExpenses = async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 2;
+  const offset = (page - 1) * limit;
+
   try {
-    const expenses = await req.user.getExpenses();
-    res.json({ res: expenses, premium: req.user.isPremium });
+    const count = await req.user.countExpenses();
+    const result = await req.user.getExpenses({
+      limit,
+      offset,
+      attributes: ["id", "amount", "description", "category"],
+      raw: true,
+    });
+
+    res.json({
+      res: result,
+      premium: req.user.isPremium,
+      totalItems: count,
+    });
   } catch (err) {
     console.error("Error fetching expenses:", err);
     res.status(500).json({ message: "Error fetching expenses" });
@@ -22,8 +37,13 @@ exports.postExpense = async (req, res) => {
       { transaction: t }
     );
 
-    const sum = req.user.totalExpense + amount;
-    await req.user.update({ totalExpense: sum }, { transaction: t });
+    const currentTotalExpense = parseFloat(req.user.totalExpense) || 0;
+    const newTotalExpense = currentTotalExpense + parseFloat(amount);
+
+    await req.user.update(
+      { totalExpense: newTotalExpense },
+      { transaction: t }
+    );
 
     await t.commit();
     console.log("Expense added");
@@ -51,8 +71,11 @@ exports.deleteExpense = async (req, res) => {
     await expense.destroy({ transaction: t });
 
     const user = await User.findByPk(req.user.id, { transaction: t });
-    const sum = user.totalExpense - expense.amount;
-    await user.update({ totalExpense: sum }, { transaction: t });
+
+    const currentTotalExpense = parseFloat(user.totalExpense) || 0;
+    const newTotalExpense = currentTotalExpense - parseFloat(expense.amount);
+
+    await user.update({ totalExpense: newTotalExpense }, { transaction: t });
 
     await t.commit();
     res.status(200).json({ message: "Expense deleted successfully" });

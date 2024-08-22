@@ -14,15 +14,19 @@
         align-items: center;
         height: 100vh;
         margin: 0;
+        overflow-x: hidden;
+        padding: 0;
       }
       .container {
         background-color: white;
-        padding: 20px;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         width: 80%;
         max-width: 600px;
         position: relative;
+        padding: 20px;
+        overflow-y: auto; /* Add vertical scroll when content overflows */
+    max-height: calc(100vh - 40px);
       }
       h1 {
         margin-top: 0;
@@ -46,12 +50,16 @@
         background-color: #0056b3;
       }
       .premium-button {
-        right: 160px;
+        right: 200px; /* Adjusted from 160px */
       }
       .leaderboard-button {
-        right: 80px;
+        right: 120px; /* Adjusted from 80px */
       }
       .download-button {
+        right: 40px; /* Adjusted from 20px */
+      }
+      .showdownloadedfiles-button {
+        top: 60px; /* Added new button position */
         right: 20px;
       }
       form {
@@ -122,6 +130,34 @@
         background-color: #f8d7da;
         color: #721c24;
       }
+      .pagination-controls {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+      }
+
+      /* Styles for individual pagination buttons */
+      .pagination-controls button {
+        background-color: #f1f1f1;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px 15px;
+        margin: 0 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      /* Active page button style */
+      .pagination-controls button.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+      }
+
+      /* Hover effect for pagination buttons */
+      .pagination-controls button:hover {
+        background-color: #ddd;
+      }
     </style>
   </head>
   <body>
@@ -169,6 +205,17 @@
       <!-- Leaderboard section -->
       <ul id="downloadedfiles" style="display: none"></ul>
     </div>
+    <div class="pagination-controls" id="paginationControls"></div>
+      <label for="itemsPerPage">Items per page:</label>
+      <select id="itemsPerPage">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+    <div id="expenses"></div>
+    <div id="pagination"></div>
 
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
@@ -189,25 +236,63 @@
           document.getElementById("downloadExpenses");
         const showDownloadsButton = document.getElementById("showDownloads");
 
-        const expenseForm = document.getElementById("expenseForm");
+        // const expenseForm = document.getElementById("expenseForm");
+        // const dynamicPaginationList = document.getElementById("itemsPerPage");
+
+        const itemsPerPageSelect = document.getElementById("itemsPerPage");
+        const expensesContainer = document.getElementById("expenses");
+        const paginationContainer = document.getElementById("pagination");
 
         const token = localStorage.getItem("token");
 
-        async function fetchExpenses() {
+        let currentPage = 1;
+
+        function saveItemsPerPageToLocalStorage(limit) {
+          localStorage.setItem("limit", limit);
+        }
+
+        function getItemsPerPageFromLocalStorage() {
+          return localStorage.getItem("limit") || "1"; // Default to 1 if not set
+        }
+
+        itemsPerPageSelect.addEventListener("change", function (event) {
+          const newLimit = event.target.value;
+          saveItemsPerPageToLocalStorage(newLimit);
+          currentPage = 1; // Reset to the first page
+          fetchExpenses(currentPage);
+        });
+
+        itemsPerPageSelect.value = getItemsPerPageFromLocalStorage(); // Set the dropdown value on load
+        fetchExpenses(currentPage); // Fetch expenses on page load with current page and limit
+
+        async function fetchExpenses(page = 1) {
           try {
-            const response = await fetch(apiUrl, {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: token,
-              },
-            });
+            const itemsPerPage = localStorage.getItem("limit") || "1"; // Use limit from local storage
+            console.log(itemsPerPage);
+            const response = await fetch(
+              `${apiUrl}?page=${page}&limit=${itemsPerPage}`,
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: token,
+                },
+              }
+            );
 
             if (!response.ok) {
               throw new Error("Failed to fetch expenses");
             }
 
-            const { res, premium } = await response.json();
+            const data = await response.json();
+            const { res, premium, totalItems } = data;
+            console.log(data);
+
+            if (!Array.isArray(res)) {
+              throw new Error("Unexpected response format");
+            }
+
             expenseList.innerHTML = "";
+
             res.forEach((expense) => {
               const li = document.createElement("li");
               li.textContent = `${expense.amount} - ${expense.description} - ${expense.category}`;
@@ -228,7 +313,6 @@
               showLeaderboardButton.style.display = "block";
               downloadExpensesButton.style.display = "block";
               showDownloadsButton.style.display = "block";
-
               messageDiv.textContent = "You are a premium user";
               messageDiv.className = "message success";
             } else {
@@ -237,10 +321,54 @@
               downloadExpensesButton.style.display = "none";
               showDownloadsButton.style.display = "none";
             }
+            renderPagination(totalItems, itemsPerPage);
           } catch (error) {
             console.error("Error fetching expenses:", error);
             messageDiv.textContent = "Error fetching expenses";
             messageDiv.className = "message error";
+          }
+        }
+
+        function renderPagination(totalItems, itemsPerPage) {
+          paginationControls.innerHTML = "";
+
+          const totalPages = Math.ceil(totalItems / itemsPerPage);
+          let startPage = Math.max(1, currentPage - 1);
+          let endPage = Math.min(totalPages, startPage + 2);
+
+          if (endPage - startPage < 3) {
+            startPage = Math.max(1, endPage - 3);
+          }
+
+          if (currentPage > 1) {
+            const prevButton = document.createElement("button");
+            prevButton.textContent = "Prev";
+            prevButton.addEventListener("click", () => {
+              currentPage--;
+              fetchExpenses(currentPage);
+            });
+            paginationControls.appendChild(prevButton);
+          }
+
+          for (let i = startPage; i <= endPage; i++) {
+            const pageButton = document.createElement("button");
+            pageButton.textContent = i;
+            pageButton.className = i === currentPage ? "active" : "";
+            pageButton.addEventListener("click", () => {
+              currentPage = i;
+              fetchExpenses(currentPage);
+            });
+            paginationControls.appendChild(pageButton);
+          }
+
+          if (currentPage < totalPages) {
+            const nextButton = document.createElement("button");
+            nextButton.textContent = "Next";
+            nextButton.addEventListener("click", () => {
+              currentPage++;
+              fetchExpenses(currentPage);
+            });
+            paginationControls.appendChild(nextButton);
           }
         }
 
@@ -257,7 +385,7 @@
               throw new Error("Failed to delete expense");
             }
 
-            fetchExpenses();
+            fetchExpenses(currentPage);
             messageDiv.textContent = "Expense deleted successfully";
             messageDiv.className = "message success";
           } catch (error) {
@@ -266,7 +394,6 @@
             messageDiv.className = "message error";
           }
         }
-
         showLeaderboardButton.addEventListener("click", async function () {
           try {
             const response = await fetch(leaderboardUrl, {
@@ -342,7 +469,6 @@
             messageDiv.className = "message error";
           }
         });
-
         buyPremiumButton.addEventListener("click", async function () {
           try {
             const response = await fetch(
@@ -436,8 +562,17 @@
           window.location.href = "expensereport.html";
         });
 
-        fetchExpenses();
+        fetchExpenses(currentPage);
       });
+    </script>
+    <script>
+      document
+        .getElementById("itemsPerPage")
+        .addEventListener("change", function () {
+          const selectedLimit = this.value;
+          localStorage.setItem("limit", selectedLimit);
+          fetchExpenses(currentPage);
+        });
     </script>
   </body>
 </html>

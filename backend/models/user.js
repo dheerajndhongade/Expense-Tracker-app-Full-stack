@@ -25,7 +25,7 @@ let User = sequelize.define("users", {
     type: Sequelize.BOOLEAN,
   },
   totalExpense: {
-    type: Sequelize.INTEGER,
+    type: Sequelize.FLOAT,
     defaultValue: 0,
   },
 });
