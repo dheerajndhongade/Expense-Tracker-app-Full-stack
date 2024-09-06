@@ -124,7 +124,7 @@
             console.log(data);
             if (response.ok) {
               localStorage.setItem("token", data.token);
-              window.location.href = "/frontend/expenses.html";
+              window.location.href = "/frontend/expenses/expenses.html";
             } else {
               document.getElementById("error-message").textContent =
                 data.message;

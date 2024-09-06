@@ -40,7 +40,7 @@ exports.forgotPassword = async (req, res) => {
     sendSmtpEmail.htmlContent = `<html><body><p>Click <a href="http://localhost:5000/password/resetpassword/${resetRequestId}">here</a> to reset your password.</p></body></html>`;
     sendSmtpEmail.sender = {
       name: "Dheeraj",
-      email: "bla998050@gmail.com",
+      email: "sathyarjun007@gmail.com",
     };
     sendSmtpEmail.to = [{ email: email }];
 

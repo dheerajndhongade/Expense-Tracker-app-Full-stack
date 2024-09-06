@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="expenses.css" />
+  </head>
+  <body>
+    <div class="container">
+      <button class="premium-button" id="buyPremium">Buy Premium</button>
+      <button
+        class="leaderboard-button"
+        id="showLeaderboard"
+        style="display: none"
+      >
+        Leaderboard
+      </button>
+      <button
+        class="download-button"
+        id="downloadExpenses"
+        style="display: none"
+      >
+        Download Expenses
+      </button>
+      <button
+        class="showdownloadedfiles-button"
+        id="showDownloads"
+        style="display: none"
+      >
+        Show downloaded files
+      </button>
+      <h1>Expense Tracker</h1>
+      <form id="expenseForm">
+        <label for="amount">Amount:</label>
+        <input type="text" name="amount" id="amount" required />
+        <label for="description">Description:</label>
+        <input type="text" name="description" id="description" required />
+        <label for="category">Category:</label>
+        <select name="category" id="category">
+          <option value="fuel">Fuel</option>
+          <option value="food">Food</option>
+          <option value="electricity">Electricity</option>
+          <option value="movie">Movie</option>
+        </select>
+        <button type="submit">Add Expense</button>
+      </form>
+      <div id="message" class="message"></div>
+      <ul id="expenseList"></ul>
+      <ul id="leaderboard" style="display: none"></ul>
+      <!-- Leaderboard section -->
+      <ul id="downloadedfiles" style="display: none"></ul>
+    </div>
+    <div class="pagination-container">
+      <div class="pagination-controls" id="paginationControls"></div>
+      <label for="itemsPerPage">Items per page:</label>
+      <select id="itemsPerPage">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="expenses.js"></script>
+    <script>
+      document
+        .getElementById("itemsPerPage")
+        .addEventListener("change", function () {
+          const selectedLimit = this.value;
+          localStorage.setItem("limit", selectedLimit);
+          fetchExpenses(currentPage);
+        });
+    </script>
+  </body>
+</html>
