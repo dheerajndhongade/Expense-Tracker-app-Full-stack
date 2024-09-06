@@ -1,33 +1,39 @@
-let express = require("express");
-let cors = require("cors");
-let bodyParser = require("body-parser");
-let path = require("path");
-let helmet = require("helmet");
-let compression = require("compression");
-let morgan = require("morgan");
-let fs = require("fs");
-let port = 5000;
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const path = require("path");
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
+const fs = require("fs");
+const mongoose = require("mongoose");
+const port = 5000;
 
-let sequelize = require("./util/database");
-let userRoute = require("./routes/users");
-let expenseRoute = require("./routes/expenses");
-let purchaseRoute = require("./routes/purchase");
-let premiumRoute = require("./routes/premium");
-let passwordRoute = require("./routes/password");
+const userRoute = require("./routes/users");
+const expenseRoute = require("./routes/expenses");
+const purchaseRoute = require("./routes/purchase");
+const premiumRoute = require("./routes/premium");
+const passwordRoute = require("./routes/password");
 
-let User = require("./models/user");
-let Expense = require("./models/expense");
-let Order = require("./models/orders");
-let ForgotPasswordRequests = require("./models/forgotpassword");
-let FilesUrl = require("./models/fileurl");
+const app = express();
 
-let app = express();
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  {
+    flags: "a",
+  }
+);
 
-let accessLogStream = fs.createWriteStream(path.join(__dirname, "access.log"), {
-  flags: "a",
-});
-
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+      },
+    },
+  })
+);
 app.use(compression());
 app.use(morgan("combined", { stream: accessLogStream }));
 app.use(cors());
@@ -40,24 +46,17 @@ app.use(expenseRoute);
 app.use("/purchase", purchaseRoute);
 app.use("/premium", premiumRoute);
 
-User.hasMany(Expense, { foreignKey: "userId", onDelete: "CASCADE" });
-Expense.belongsTo(User, { foreignKey: "userId" });
-
-User.hasMany(Order, { foreignKey: "userId", onDelete: "CASCADE" });
-Order.belongsTo(User, { foreignKey: "userId" });
-
-User.hasMany(ForgotPasswordRequests, { foreignKey: "userId" });
-ForgotPasswordRequests.belongsTo(User, { foreignKey: "userId" });
-
-User.hasMany(FilesUrl, { onDelete: "CASCADE" });
-FilesUrl.belongsTo(User);
-
-sequelize
-  .sync()
-  //.sync({ force: true })
+mongoose
+  .connect(
+    "mongodb+srv://dheerajndhongade:ZcpYux897Hz61V4p@cluster0.no6uy.mongodb.net/expensetracker?retryWrites=true&w=majority&appName=Cluster0",
+    {
+      // useNewUrlParser: true,
+      // useUnifiedTopology: true,
+    }
+  )
   .then(() => {
     app.listen(port, () => {
-      console.log(`Running at port ${port}`);
+      console.log(`Server is running on port ${port}`);
     });
   })
   .catch((err) => console.log(err));

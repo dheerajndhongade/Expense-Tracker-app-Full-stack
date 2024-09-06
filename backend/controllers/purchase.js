@@ -2,7 +2,6 @@ const User = require("../models/user");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const Razorpay = require("razorpay");
-const Order = require("../models/orders");
 
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -12,7 +11,7 @@ const rzp = new Razorpay({
   key_secret: razorpayKeySecret,
 });
 
-exports.purchasePremium = (req, res) => {
+exports.purchasePremium = async (req, res) => {
   const amount = 2500;
 
   rzp.orders.create({ amount, currency: "INR" }, async (err, order) => {
@@ -26,11 +25,19 @@ exports.purchasePremium = (req, res) => {
     console.log("Order created:", order);
 
     try {
-      await req.user.createOrder({
-        paymentId: null,
-        orderId: order.id,
-        status: "PENDING",
-      });
+      // Assuming req.user is a Mongoose document or use user._id
+      const userId = req.user._id; // Ensure req.user has _id field
+
+      // Save the order in the database
+      await User.updateOne(
+        { _id: userId },
+        {
+          $push: {
+            orders: { paymentId: null, orderId: order.id, status: "PENDING" },
+          },
+        }
+      );
+
       res.status(201).json({
         razorpayOrderId: order.id,
         razorpayKey: process.env.RAZORPAY_KEY_ID,
@@ -56,20 +63,28 @@ exports.updateTransactionStatus = async (req, res) => {
         .json({ success: false, message: "Missing parameters" });
     }
 
-    const order = await Order.findOne({ where: { orderId: order_id } });
+    const user = await User.findOne({ "orders.orderId": order_id });
 
-    if (!order) {
+    if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "Order not found" });
     }
 
-    await order.update({ paymentId: payment_id, status: "SUCCESSFUL" });
+    await User.updateOne(
+      { "orders.orderId": order_id },
+      {
+        $set: {
+          "orders.$.paymentId": payment_id,
+          "orders.$.status": "SUCCESSFUL",
+        },
+      }
+    );
 
-    await req.user.update({ isPremium: true });
+    await User.updateOne({ _id: user._id }, { isPremium: true });
 
     const token = jwt.sign(
-      { userId: req.user.id, isPremium: true },
+      { userId: user._id, isPremium: true },
       process.env.JWT_SECRET
     );
 

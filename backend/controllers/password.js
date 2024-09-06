@@ -1,16 +1,12 @@
 const { v4: uuidv4 } = require("uuid");
 const Sib = require("sib-api-v3-sdk");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-
 const User = require("../models/user");
 const ForgotPasswordRequest = require("../models/forgotpassword");
 
 const client = Sib.ApiClient.instance;
 const apiKey = client.authentications["api-key"];
 apiKey.apiKey = process.env.SENDINBLUE_API_KEY;
-
-let jwtSecretKey = process.env.JWT_SECRET;
 
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -20,7 +16,7 @@ exports.forgotPassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -28,11 +24,13 @@ exports.forgotPassword = async (req, res) => {
 
     const resetRequestId = uuidv4();
 
-    await ForgotPasswordRequest.create({
-      id: resetRequestId,
-      userId: user.id,
+    const resetRequest = new ForgotPasswordRequest({
+      _id: resetRequestId, // Ensure _id is correctly set to accept a string
+      userId: user._id,
       isActive: true,
     });
+
+    await resetRequest.save();
 
     const apiInstance = new Sib.TransactionalEmailsApi();
     const sendSmtpEmail = new Sib.SendSmtpEmail();
@@ -42,10 +40,11 @@ exports.forgotPassword = async (req, res) => {
       name: "Dheeraj",
       email: "sathyarjun007@gmail.com",
     };
-    sendSmtpEmail.to = [{ email: email }];
+    sendSmtpEmail.to = [{ email }];
 
     await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log("Password reset email sent successfully");
+
     res
       .status(200)
       .json({ message: "Password reset link has been sent to your email." });
@@ -60,32 +59,52 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   const { resetRequestId, newPassword } = req.body;
 
+  // Check if required fields are present
+  if (!resetRequestId || !newPassword) {
+    return res
+      .status(400)
+      .json({ message: "Reset request ID and new password are required" });
+  }
+
   try {
-    let resetRequest = await ForgotPasswordRequest.findOne({
-      where: { id: resetRequestId, isActive: true },
+    // Log the request to ensure controller is being hit
+    console.log(
+      "Reset Password controller hit with:",
+      resetRequestId,
+      newPassword
+    );
+
+    // Find the active reset request using Mongoose
+    const resetRequest = await ForgotPasswordRequest.findOne({
+      _id: resetRequestId,
+      isActive: true,
     });
 
+    // Check if reset request exists and is active
     if (!resetRequest) {
       return res
         .status(404)
         .json({ message: "Invalid or expired reset request" });
     }
 
-    let hashedPassword = await bcrypt.hash(newPassword, 10);
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await User.update(
-      { password: hashedPassword },
-      { where: { id: resetRequest.userId } }
+    // Update the user's password
+    await User.updateOne(
+      { _id: resetRequest.userId },
+      { $set: { password: hashedPassword } }
     );
 
-    await ForgotPasswordRequest.update(
-      { isActive: false },
-      { where: { id: resetRequestId } }
+    // Deactivate the reset request
+    await ForgotPasswordRequest.updateOne(
+      { _id: resetRequestId },
+      { $set: { isActive: false } }
     );
 
     res.status(200).json({ message: "Password has been reset successfully" });
   } catch (error) {
-    console.error(error);
+    console.error("Error resetting password:", error);
     res.status(500).json({ message: "Error resetting password" });
   }
 };

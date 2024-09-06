@@ -11,6 +11,8 @@ router.post("/resetpassword", passwordController.resetPassword);
 
 router.get("/resetpassword/:id", (req, res) => {
   const resetRequestId = req.params.id;
+  console.log(req.params);
+  console.log(resetRequestId);
   res.sendFile(path.join(__dirname, "../../frontend/reset-password.html"));
 });
 

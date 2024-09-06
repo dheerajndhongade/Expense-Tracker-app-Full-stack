@@ -35,11 +35,11 @@ document.addEventListener("DOMContentLoaded", async function () {
   itemsPerPageSelect.addEventListener("change", function (event) {
     const newLimit = event.target.value;
     saveItemsPerPageToLocalStorage(newLimit);
-    currentPage = 1; 
+    currentPage = 1;
     fetchExpenses(currentPage);
   });
 
-  itemsPerPageSelect.value = getItemsPerPageFromLocalStorage(); 
+  itemsPerPageSelect.value = getItemsPerPageFromLocalStorage();
   fetchExpenses(currentPage);
 
   async function fetchExpenses(page = 1) {
@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         deleteButton.textContent = "Delete";
         deleteButton.className = "delete-btn";
         deleteButton.onclick = async function () {
-          await deleteExpense(expense.id);
+          await deleteExpense(expense._id);
         };
         li.appendChild(deleteButton);
 
@@ -211,7 +211,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
 
       const downloadsFiles = await response.json();
-      console.log(downloadsFiles); 
+      console.log(downloadsFiles);
 
       if (Array.isArray(downloadsFiles.files)) {
         downloadedfilesList.innerHTML = "";
